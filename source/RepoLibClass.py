@@ -102,12 +102,24 @@ class RepoManager():
         with ThreadPoolExecutor(max_workers=len(repo_uids)) as executor:
             futures = {executor.submit(run_git_command, repo_uid, 'execute_pull'): repo_uid for repo_uid in repo_uids}
 
-    def pull_some_repos(self,uid_list):
+    def pull_some_repos(self,id_list):
+        uid_list = []
+        txt = ""
+        count = 1
+        for repo in self.__repos_sorted:
+            repo = repo[1]
+            if repo.vpull_available:
+                if count in id_list:
+                    uid_list.append(count)
+                count += 1
+
         repo_uids = []
         for uid in uid_list:
             if uid in self.repos.keys():
                 if self.repos[uid].vpull_available:
                     repo_uids.append(uid)
+                else:print('---- no pull for {}')
+            else:print('---- {} not in the list')
         with ThreadPoolExecutor(max_workers=len(repo_uids)) as executor:
             futures = {executor.submit(run_git_command, repo_uid, 'execute_pull'): repo_uid for repo_uid in repo_uids}
 
