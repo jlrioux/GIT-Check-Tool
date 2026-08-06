@@ -1,0 +1,70 @@
+
+This file lists modules PyInstaller was not able to find. This does not
+necessarily mean these modules are required for running your program. Both
+Python's standard library and 3rd-party Python packages often conditionally
+import optional modules, some of which may be available only on certain
+platforms.
+
+Types of import:
+* top-level: imported at the top-level - look at these first
+* conditional: imported within an if-statement
+* delayed: imported within a function
+* optional: imported within a try-except-statement
+
+IMPORTANT: Do NOT post this list to the issue-tracker. Use it as a basis for
+            tracking down the missing module yourself. Thanks!
+
+missing module named pwd - imported by posixpath (delayed, conditional, optional), subprocess (delayed, conditional, optional), shutil (delayed, optional), tarfile (optional), pathlib (optional), netrc (delayed, optional)
+missing module named grp - imported by subprocess (delayed, conditional, optional), shutil (delayed, optional), tarfile (optional), pathlib (optional)
+missing module named 'collections.abc' - imported by tracemalloc (top-level), typing (top-level), traceback (top-level), _colorize (top-level), selectors (top-level), logging (top-level), http.client (top-level), importlib.resources.readers (top-level), inspect (top-level), PIL.Image (top-level), PIL._typing (top-level), xml.etree.ElementTree (top-level), PIL.TiffImagePlugin (top-level), PIL.ImageOps (top-level), PIL.ImagePalette (top-level), PIL.GimpGradientFile (conditional), PIL.ImageFilter (top-level), PIL.ImageQt (conditional), PIL.ImageMath (conditional), PIL.ImageSequence (conditional), PIL.PngImagePlugin (conditional), asyncio.base_events (top-level), multiprocessing.managers (top-level), asyncio.coroutines (top-level), winrt.runtime._internals (top-level), typing_extensions (top-level), PIL.Jpeg2KImagePlugin (conditional)
+missing module named _posixsubprocess - imported by subprocess (conditional), multiprocessing.util (delayed)
+missing module named fcntl - imported by subprocess (optional), pathlib._os (optional)
+missing module named _posixshmem - imported by multiprocessing.resource_tracker (conditional), multiprocessing.shared_memory (conditional)
+missing module named _scproxy - imported by urllib.request (conditional)
+missing module named posix - imported by os (conditional, optional), posixpath (optional), shutil (conditional), importlib._bootstrap_external (conditional), pathlib._os (optional)
+missing module named resource - imported by posix (top-level)
+missing module named _frozen_importlib_external - imported by importlib._bootstrap (delayed), importlib (optional), importlib.abc (optional), zipimport (top-level)
+excluded module named _frozen_importlib - imported by importlib (optional), importlib.abc (optional), zipimport (top-level)
+missing module named multiprocessing.BufferTooShort - imported by multiprocessing (top-level), multiprocessing.connection (top-level)
+missing module named multiprocessing.AuthenticationError - imported by multiprocessing (top-level), multiprocessing.forkserver (top-level), multiprocessing.connection (top-level)
+missing module named multiprocessing.get_context - imported by multiprocessing (top-level), multiprocessing.pool (top-level), multiprocessing.managers (top-level), multiprocessing.sharedctypes (top-level)
+missing module named multiprocessing.TimeoutError - imported by multiprocessing (top-level), multiprocessing.pool (top-level)
+missing module named multiprocessing.set_start_method - imported by multiprocessing (top-level), multiprocessing.spawn (top-level)
+missing module named multiprocessing.get_start_method - imported by multiprocessing (top-level), multiprocessing.spawn (top-level)
+missing module named pyimod02_importers - imported by C:\Users\jeanluc.rioux\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\PyInstaller\hooks\rthooks\pyi_rth_pkgutil.py (delayed)
+missing module named 'winrt.windows.system' - imported by winrt._winrt_windows_storage_streams (top-level), winrt._winrt_windows_storage (top-level), winrt._winrt_windows_ui_notifications (top-level), winrt._winrt_windows_globalization (top-level)
+missing module named vms_lib - imported by platform (delayed, optional)
+missing module named 'java.lang' - imported by platform (delayed, optional)
+missing module named java - imported by platform (delayed)
+missing module named 'winrt.windows.graphics.directx' - imported by winrt._winrt_windows_media_core (top-level), winrt._winrt_windows_graphics_imaging (top-level), winrt._winrt_windows_media_playback (top-level)
+missing module named 'winrt.windows.storage.search' - imported by winrt._winrt_windows_storage (top-level)
+missing module named 'winrt.windows.storage.provider' - imported by winrt._winrt_windows_storage (top-level)
+missing module named 'winrt.windows.storage.fileproperties' - imported by winrt._winrt_windows_storage (top-level), winrt._winrt_windows_media_core (top-level)
+missing module named 'winrt.windows.ui.composition' - imported by winrt._winrt_windows_media_playback (top-level)
+missing module named 'winrt.windows.media.protection' - imported by winrt._winrt_windows_media_playback (top-level), winrt._winrt_windows_media_core (top-level)
+missing module named 'winrt.windows.media.mediaproperties' - imported by winrt._winrt_windows_media_core (top-level), winrt._winrt_windows_media_playback (top-level)
+missing module named 'winrt.windows.media.casting' - imported by winrt._winrt_windows_media_playback (top-level)
+missing module named 'winrt.windows.media.audio' - imported by winrt._winrt_windows_media_playback (top-level)
+missing module named 'winrt.windows.foundation.numerics' - imported by winrt._winrt_windows_media_playback (top-level)
+missing module named 'winrt.windows.devices' - imported by winrt._winrt_windows_media_playback (top-level)
+missing module named 'winrt.windows.networking' - imported by winrt._winrt_windows_media_core (top-level)
+missing module named 'winrt.windows.media.streaming' - imported by winrt._winrt_windows_media_core (top-level)
+missing module named 'winrt.windows.media.faceanalysis' - imported by winrt._winrt_windows_media_core (top-level)
+missing module named 'winrt.windows.media.effects' - imported by winrt._winrt_windows_media_core (top-level)
+missing module named 'winrt.windows.media.devices' - imported by winrt._winrt_windows_media_core (top-level)
+missing module named 'winrt.windows.media.capture' - imported by winrt._winrt_windows_media_core (top-level)
+missing module named 'winrt.windows.applicationmodel' - imported by winrt._winrt_windows_ui_notifications (top-level), winrt._winrt_windows_media_core (top-level)
+missing module named olefile - imported by PIL.FpxImagePlugin (top-level), PIL.MicImagePlugin (top-level)
+missing module named numpy - imported by PIL._typing (conditional, optional)
+missing module named defusedxml - imported by PIL.Image (optional)
+missing module named 'gi.repository' - imported by pystray._appindicator (top-level), pystray._util.gtk (top-level), pystray._util.notify_dbus (top-level), pystray._gtk (top-level)
+missing module named gi - imported by pystray._appindicator (top-level), pystray._util.gtk (top-level), pystray._util.notify_dbus (top-level), pystray._gtk (top-level)
+runtime module named six.moves - imported by pystray._base (top-level), pystray._win32 (top-level), pystray._xorg (top-level)
+missing module named StringIO - imported by six (conditional)
+missing module named 'Xlib.XK' - imported by pystray._xorg (top-level)
+missing module named 'Xlib.threaded' - imported by pystray._xorg (top-level)
+missing module named Xlib - imported by pystray._xorg (top-level)
+missing module named PyObjCTools - imported by pystray._darwin (top-level)
+missing module named objc - imported by pystray._darwin (top-level)
+missing module named Foundation - imported by pystray._darwin (top-level)
+missing module named AppKit - imported by pystray._darwin (top-level)

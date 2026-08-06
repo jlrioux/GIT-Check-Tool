@@ -1,1 +1,1 @@
-start pyinstaller.exe --clean --onedir --onefile --exclude-module _bootlocale --hidden-import babel.numbers --collect-data sv_ttk "C:\Users\manyr\OneDrive\Desktop\RD\DEV\git repo\Extron-Debug-Tool\source\main.py" --distpath "C:\Users\manyr\OneDrive\Desktop\RD\DEV\dist"
+python -m PyInstaller --clean --onedir --onefile --noconsole "C:\Users\jeanluc.rioux\Documents\RD\DEV\git repo\GIT-Check-Tool\source\GitCheckTool.py" --distpath "C:\Users\jeanluc.rioux\Documents\RD\DEV\git repo\GIT-Check-Tool\compile\exe"
