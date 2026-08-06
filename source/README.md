@@ -24,11 +24,11 @@ A Windows desktop utility that monitors all Git repositories under a configured 
 
 ## Requirements
 
-- Python 3.x
+- Python 3.x (if running source directly)
 - Windows 10 / 11 (uses `win11toast` for notifications)
 - `git` installed and available on the system `PATH`
 
-### Python Dependencies (Already bundled with EXE)
+### Python Dependencies (if running source directly)
 
 ```
 pystray
@@ -44,7 +44,7 @@ pip install pystray Pillow win11toast
 
 ## Usage
 
-1. Ensure the `icons/` folder is present in the same directory as `GitCheckTool.py`.
+1. Ensure the `icons/` folder is present in the same directory as source.
 2. Run the application:
 
    ```bash
