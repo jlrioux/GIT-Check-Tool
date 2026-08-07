@@ -20,7 +20,7 @@ from CLIManagager import CLIManagerClass  # Custom CLI manager that runs git com
 
 # --- Version constant --------------------------------------------------------
 # String identifying the app version (used in the UI version label).
-__version = '1_0_0'
+__version = '1_1_0'
 
 
 # --- Notification helper ------------------------------------------------------
@@ -113,6 +113,8 @@ def hide_window():
     if cli_manager:
         if cli_manager.repos:        # If repos are loaded, re-enable toasts (background mode)
             cli_manager.repos.allow_toasts = True
+            user_entry.delete(0,tk.END)      # Clear the input field
+            cli_manager.user_response('resetUI')   # Reset the user interface
 
 # --- Status setter --------------------------------------------------------------
 def update_status(status):

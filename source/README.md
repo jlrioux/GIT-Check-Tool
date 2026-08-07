@@ -9,6 +9,7 @@ A Windows desktop utility that monitors all Git repositories under a configured 
 - **Push / Pull Status Detection** – For each repo, determines whether you have local commits to push or remote commits to pull.
 - **Windows Toast Notifications** – Displays a notification when a repository is found that needs to be pulled.
 - **Bulk Pull** – Pull selected repositories or all repositories at once (using concurrent threads).
+- **Single Push** – Push selected repository.
 - **Colored Status Output** – Uses color-coded text (green / red / orange / blue) to clearly indicate repository status.
 - **Persistent Settings** – Remembers the configured root directory in `settings.json`.
 
@@ -71,12 +72,14 @@ Main Menu:
     1. Check all repositories for changes
     2. Pull for certain repositories
     3. Pull for all repositories
+    4. Push for certain repository
 ```
 
 - **0** – Change the root directory that is scanned for repositories.
 - **1** – Re-scan and check the status of every repository.
 - **2** – Pull only the repositories you select (enter their numbers separated by commas).
 - **3** – Pull all repositories that have remote changes available.
+- **4** – Push only the repository you select (enter a single number, then a commit message).
 
 ### Status Indicators
 
@@ -98,6 +101,7 @@ The tray icon also changes to reflect the current aggregate status of all reposi
 4. **Status Check** – `RepoClass.refresh_status()` runs `git fetch` and `git status` to determine whether push and/or pull is needed.
 5. **Notifications** – When a repo is discovered to have a pull available (and notifications are enabled), a Windows toast is shown with a **View** / **Dismiss All** button.
 6. **Pulling** – Pulls are executed concurrently using a `ThreadPoolExecutor`, running `git pull` in each selected repository.
+6. **Pushing** – Pushes are executed by running `git add -A`, `git commit`, then `git push` in the selected repository.
 
 ## Configuration
 
@@ -114,7 +118,7 @@ You can edit this file directly, or change it from within the app using menu opt
 ## Notes
 
 - The `settings.json` file and the `icons/` directory must be located in the **current working directory** from which the app is launched.
-- Closing the main window hides the app to the tray instead of quitting. Use the tray menu **Quit** to exit completely.
+- Closing the main window resets the UI and hides the app to the tray instead of quitting. Use the tray menu **Quit** to exit completely.
 - Toast notifications are only displayed when the main window is hidden, so you are not interrupted while working.
 
 ## AI Disclaimer
@@ -127,7 +131,8 @@ You can edit this file directly, or change it from within the app using menu opt
 
 ## Current Version
 
-**1.0.0**
+**1.1.0**
 
 ## Changelog
-- 2026-08-061.0.0 - initial release
+- 2026-08-06 v1.0.0 - initial release
+- 2026-08-07 v1.1.0 - added git push function

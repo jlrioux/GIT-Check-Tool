@@ -170,7 +170,6 @@ class RepoManager():
             del self.repos[uid]
         self.__repos_sorted = sorted(self.repos.items(), key=lambda item:item[1])
 
-
     def pull_all_repos(self):
         # Pull every repo that has updates available, using a thread pool.
         repo_uids = []
@@ -185,7 +184,6 @@ class RepoManager():
     def pull_some_repos(self,id_list):
         # Pull only the repos selected by the given indices (as displayed in the list).
         uid_list = []
-        txt = ""
         count = 0
         for repo in self.__repos_sorted:
             if repo[1].vpull_available:
@@ -203,6 +201,27 @@ class RepoManager():
         if len(repo_uids) < 1:return
         with ThreadPoolExecutor(max_workers=len(repo_uids)) as executor:
             futures = {executor.submit(run_git_command, repo_uid, 'execute_pull'): repo_uid for repo_uid in repo_uids}
+        self.__check_toast()
+
+    def push_repo(self,id_list,commit_message):
+        # Push only the repos selected by the given indices (as displayed in the list).
+        uid_list = []
+        count = 0
+        for repo in self.__repos_sorted:
+            if repo[1].vpush_available:
+                if count in id_list:
+                    uid_list.insert(0,repo[0])
+                count += 1
+
+        repo_uids = []
+        uid = uid_list[0]
+        if uid in self.repos.keys():
+            if self.repos[uid].vpush_available:
+                repo_uids.append(uid)
+            else:RepoManager.printout('> ---- no push for {}\n'.format(self.repos[uid].dirpath))
+        else:RepoManager.printout('> ---- {} not in the list\n'.format(self.repos[uid].dirpath))
+        if len(repo_uids) < 1:return
+        self.repos[uid].execute_push(commit_message)
         self.__check_toast()
 
     def refresh_repo_list(self):
@@ -270,8 +289,26 @@ class RepoManager():
                 RepoManager.printout('\n')
                 pull_count += 1
                 count += 1
-        RepoManager.printout('> {} repositories need to be pulled\n'.format(pull_count))
+        if pull_count > 0:
+            RepoManager.printout('> {} repositories need to be pulled\n'.format(pull_count))
         return pull_count
+
+    def display_repos_to_push(self):
+        # Print a numbered list of repos that have updates available to push.
+        count = 1
+        push_count = 0
+        for repo in self.__repos_sorted:
+            repo = repo[1]
+            if repo.vpush_available:
+                RepoManager.printout('> ')
+                RepoManager.printout('{}. '.format(count))
+                self.__create_repo_display_text(repo)
+                RepoManager.printout('\n')
+                push_count += 1
+                count += 1
+        if push_count > 0:
+            RepoManager.printout('> {} repositories need to be pushed\n'.format(push_count))
+        return push_count
 
     def force_all_repo_status_query(self):
         # Refresh the status of every repo in parallel using a thread pool.
@@ -360,7 +397,7 @@ class RepoClass():
             result = subprocess.check_output(pull_command, shell=True, text=True, stderr=subprocess.STDOUT)
         except subprocess.CalledProcessError as cpe:
             RepoManager.printout('> ---- pulling failed: "' + self.dirpath + '"\n{}'.format(str(cpe.output)) + '\n','red')
-            RepoManager.printout('> {}\n'.format(e))
+            RepoManager.printout('> {}\n'.format(cpe))
             return
         except Exception as e:
             RepoManager.printout('> ---- pulling failed: "'+self.dirpath,'red')
@@ -371,12 +408,32 @@ class RepoClass():
         RepoManager.printout('pull result:\n{}\n'.format(result),'green')
         self.refresh_status()
 
+    def execute_push(self,commit_message):
+        # Run git pull on this repo, print the result, and refresh the status.
+        self.vbusy = True
+        RepoManager.printout('> ---- pushing repo:'+self.dirpath+'\n')
+        push_command = 'git -C "{}" add -A && git -C "{}" commit -m "{}" && git -C "{}" push'.format(self.dirpath,self.dirpath,commit_message,self.dirpath)
+        try:
+            result = subprocess.check_output(push_command, shell=True, text=True, stderr=subprocess.STDOUT)
+        except subprocess.CalledProcessError as cpe:
+            RepoManager.printout('> ---- pushing failed: "' + self.dirpath + '"\n{}'.format(str(cpe.output)) + '\n','red')
+            RepoManager.printout('> {}\n'.format(cpe))
+            return
+        except Exception as e:
+            RepoManager.printout('> ---- pushing failed: "'+self.dirpath,'red')
+            RepoManager.printout('> {}\n'.format(e))
+            return
+        RepoManager.printout('> ---- pushing complete:'+self.dirpath+'\n')
+        RepoManager.printout('> ')
+        RepoManager.printout('push result:\n{}\n'.format(result),'green')
+        self.refresh_status()
+
     def __check_status(self):
         # Combine push/pull flags into an overall status string.
         push_needed = 0
         pull_needed = 0
         results = {0:'GOOD',1:'PUSH',2:'PULL',3:'BOTH'}
-        if self.push_available:push_needed = 1
+        if self.vpush_available:push_needed = 1
         if self.vpull_available:pull_needed = 2
         result = push_needed + pull_needed
         return results[result]

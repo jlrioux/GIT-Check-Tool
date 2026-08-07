@@ -36,6 +36,7 @@ class CLIManagerClass():
         # that the response is expected to be a directory path.
         self.__user_response = ''
         self.__user_response_dir = False
+        self.__force_integer_user_response = True
 
         # Create a background daemon thread that continuously processes
         # CLI input. The thread target is the inner 'run' function returned
@@ -53,12 +54,15 @@ class CLIManagerClass():
         # Called by the UI when the user submits a response.
         # If we are currently expecting a directory path, store the response
         # and release the input lock so input() returns.
+        if not CLIManagerClass.__input_lock.locked():return
         if self.__user_response_dir:
             self.__user_response = text
             CLIManagerClass.__input_lock.release()
         # Ignore responses that are not the 'resetUI' command and do not
         # match a comma-separated list of numbers.
-        if text != 'resetUI' and not re.match(r'^\d+(?:,\s*\d+)*$',text):return
+        if text != 'resetUI' and not re.match(r'^\d+(?:,\s*\d+)*$',text):
+            if self.__force_integer_user_response:return
+        self.__force_integer_user_response = True
         # Store the validated response, echo it back to the UI, and release
         # the input lock so the waiting input() call can proceed.
         self.__user_response = text
@@ -100,10 +104,11 @@ class CLIManagerClass():
     1. Check all repositories for changes
     2. Pull for certain repositories
     3. Pull for all repositories
+    4. Push repository
 What would you like to do? :\n""")
         CLIManagerClass.clearout()
         # Default to action '1' if an invalid selection was entered.
-        if action not in ['0','1','2','3']:action = '1'
+        if action not in ['0','1','2','3','4']:action = '1'
         try:
             action = int(action)
         except:
@@ -132,6 +137,7 @@ What would you like to do? :\n""")
             repo_list_str = ''
             repo_list_str = self.input('Enter repo numbers to pull separated by commas:\n')
             if repo_list_str == 'resetUI':
+                CLIManagerClass.clearout()
                 self.repos.display_all_repos()
                 return
             try:
@@ -154,6 +160,42 @@ What would you like to do? :\n""")
         if action == 3:
             # Pull all repositories.
             self.repos.pull_all_repos()
+        if action == 4:
+            # push a specific repository chosen by the user.
+            num_repos = self.repos.display_repos_to_push()
+            if num_repos < 1:
+                self.repos.display_all_repos()
+                return
+            repo_list = []
+            repo_list_str = ''
+            repo_list_str = self.input('Enter repo number to push:\n')
+            if repo_list_str == 'resetUI':
+                CLIManagerClass.clearout()
+                self.repos.display_all_repos()
+                return
+            try:
+                # Convert the user's comma-separated input into a list of
+                # zero-based repo indices.
+                repo_list = repo_list_str.split(',')
+                count = 0
+                for repo_id in repo_list:
+                    repo_list[count] = int(repo_list[count])-1
+                    count += 1
+            except:
+                repo_list = []
+                self.repos.display_all_repos()
+                return
+            if len(repo_list) != 1:
+                # No valid repos selected; show all repos and return.
+                self.repos.display_all_repos()
+                return
+            self.__force_integer_user_response = False
+            commit_msg = self.input('Enter commit message:\n')
+            if commit_msg == 'resetUI':
+                CLIManagerClass.clearout()
+                self.repos.display_all_repos()
+                return
+            self.repos.push_repo(repo_list,commit_msg)
         # Display the full list of repositories after the operation.
         self.repos.display_all_repos()
         return
