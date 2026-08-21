@@ -1,6 +1,6 @@
 # Repo Status App (Git Check Tool)
 
-A Windows desktop utility that monitors all Git repositories under a configured root directory. The app runs in the system tray, periodically (about every 60 seconds) checks every repository for local changes (push needed) and remote updates (pull needed), and shows Windows toast notifications when updates are detected.
+A Windows desktop utility that monitors all Git repositories under a configured root directory. The app runs in the system tray, periodically (about every 10 minutes) checks every repository for local changes (push needed) and remote updates (pull needed), and shows Windows toast notifications when updates are detected.
 
 ## Features
 
@@ -92,7 +92,7 @@ The tray icon also changes to reflect the current aggregate status of all reposi
 ## How It Works
 
 1. **Startup** – `GitCheckTool.py` initializes the Tkinter window and the system tray icon, then starts a background daemon thread.
-2. **Auto Loop** – Every ~60 seconds (30 counts of a 2-second loop) the manager checks for repository status changes while the window is hidden.
+2. **Auto Loop** – Every ~10 minutes (300 counts of a 2-second loop) the manager checks for repository status changes while the window is hidden.
 3. **Repo Discovery** – `RepoManager` recursively walks the root directory looking for `.git` folders and registers each one as a `RepoClass`.
 4. **Status Check** – `RepoClass.refresh_status()` runs `git fetch` and `git status` to determine whether push and/or pull is needed.
 5. **Notifications** – When a repo is discovered to have a pull available (and notifications are enabled), a Windows toast is shown with a **View** / **Dismiss All** button.
@@ -129,4 +129,5 @@ You can edit this file directly, or change it from within the app using menu opt
 **1.0.0**
 
 ## Changelog
-- 2026-08-061.0.0 - initial release
+- 2026-08-06 v1.0.0 - initial release
+- 2026-08-06 v1.1.1 - changed polling delay to 10 minutes from 1 minute

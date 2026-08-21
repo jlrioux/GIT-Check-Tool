@@ -20,7 +20,7 @@ from CLIManagager import CLIManagerClass  # Custom CLI manager that runs git com
 
 # --- Version constant --------------------------------------------------------
 # String identifying the app version (used in the UI version label).
-__version = '1_1_0'
+__version = '1_1_1'
 
 
 # --- Notification helper ------------------------------------------------------
@@ -74,8 +74,8 @@ def __auto_loop():
                 cli_manager = CLIManagerClass(printout,clearout,update_status)  # Create manager
                 cli_manager.Start(not window_is_shown)                          # Start background checks
             else:
-                # Every 30 loops (~60s) after startup:
-                if __auto_loop_count % 30 == 0:
+                # Every 300 loops (~10m) after startup:
+                if __auto_loop_count % 300 == 0:
                     if not window_is_shown and cli_manager.repos.root_directory_set:      # Only when window is hidden (in background)
                         update_status('BUSY')    # Mark as busy while checking
                         cli_manager.user_response('resetUI')  # Trigger a fresh status check
