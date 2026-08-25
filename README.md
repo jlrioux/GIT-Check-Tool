@@ -8,7 +8,9 @@ A Windows desktop utility that monitors all Git repositories under a configured 
 - **Automatic Repository Discovery** – Recursively scans a given root directory and builds a list of all Git repositories found.
 - **Push / Pull Status Detection** – For each repo, determines whether you have local commits to push or remote commits to pull.
 - **Windows Toast Notifications** – Displays a notification when a repository is found that needs to be pulled.
-- **Bulk Pull** – Pull selected repositories or all repositories at once (using concurrent threads).
+- **Selective Pull** – Pull selected repositories (using concurrent threads).
+- **Bulk Pull** – Pull all repositories at once (using concurrent threads).
+- **Push** – Commit changes to a selected repositories with comment.
 - **Colored Status Output** – Uses color-coded text (green / red / orange / blue) to clearly indicate repository status.
 - **Persistent Settings** – Remembers the configured root directory in `settings.json`.
 
@@ -70,12 +72,14 @@ Main Menu:
     1. Check all repositories for changes
     2. Pull for certain repositories
     3. Pull for all repositories
+    4. Push repository
 ```
 
 - **0** – Change the root directory that is scanned for repositories.
 - **1** – Re-scan and check the status of every repository.
 - **2** – Pull only the repositories you select (enter their numbers separated by commas).
 - **3** – Pull all repositories that have remote changes available.
+- **4** – Push only the selected repository that has local changes available.
 
 ### Status Indicators
 
@@ -97,6 +101,7 @@ The tray icon also changes to reflect the current aggregate status of all reposi
 4. **Status Check** – `RepoClass.refresh_status()` runs `git fetch` and `git status` to determine whether push and/or pull is needed.
 5. **Notifications** – When a repo is discovered to have a pull available (and notifications are enabled), a Windows toast is shown with a **View** / **Dismiss All** button.
 6. **Pulling** – Pulls are executed concurrently using a `ThreadPoolExecutor`, running `git pull` in each selected repository.
+7. **Push** – A push asks for a comment before running `git commit` in the selected repository.
 
 ## Configuration
 
@@ -131,3 +136,4 @@ You can edit this file directly, or change it from within the app using menu opt
 ## Changelog
 - 2026-08-06 v1.0.0 - initial release
 - 2026-08-06 v1.1.1 - changed polling delay to 10 minutes from 1 minute
+- 2026-08-06 v1.1.2 - added isdir() check to prevent issues during directory search for repos

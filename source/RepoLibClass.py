@@ -140,6 +140,7 @@ class RepoManager():
         if not dir:
             self.__dir_list = []
             dir = self.__settings['root dir']
+        if not os.path.isdir(dir):return
         dir_list = os.listdir(dir)
         if '.git' in dir_list:
             self.__dir_list.append(dir)

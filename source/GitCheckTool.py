@@ -20,7 +20,7 @@ from CLIManagager import CLIManagerClass  # Custom CLI manager that runs git com
 
 # --- Version constant --------------------------------------------------------
 # String identifying the app version (used in the UI version label).
-__version = '1_1_1'
+__version = '1_1_2'
 
 
 # --- Notification helper ------------------------------------------------------
