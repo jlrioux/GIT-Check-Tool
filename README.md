@@ -1,6 +1,6 @@
 # Repo Status App (Git Check Tool)
 
-A Windows desktop utility that monitors all Git repositories under a configured root directory. The app runs in the system tray, periodically (about every 10 minutes) checks every repository for local changes (push needed) and remote updates (pull needed), and shows Windows toast notifications when updates are detected.
+A Windows desktop utility that monitors all Git repositories under a configured root directory. The app runs in the system tray, periodically (about every 60 seconds) checks every repository for local changes (push needed) and remote updates (pull needed), and shows Windows toast notifications when updates are detected.
 
 ## Features
 
@@ -8,9 +8,8 @@ A Windows desktop utility that monitors all Git repositories under a configured 
 - **Automatic Repository Discovery** – Recursively scans a given root directory and builds a list of all Git repositories found.
 - **Push / Pull Status Detection** – For each repo, determines whether you have local commits to push or remote commits to pull.
 - **Windows Toast Notifications** – Displays a notification when a repository is found that needs to be pulled.
-- **Selective Pull** – Pull selected repositories (using concurrent threads).
-- **Bulk Pull** – Pull all repositories at once (using concurrent threads).
-- **Push** – Commit changes to a selected repositories with comment.
+- **Bulk Pull** – Pull selected repositories or all repositories at once (using concurrent threads).
+- **Single Push** – Push selected repository.
 - **Colored Status Output** – Uses color-coded text (green / red / orange / blue) to clearly indicate repository status.
 - **Persistent Settings** – Remembers the configured root directory in `settings.json`.
 
@@ -26,27 +25,28 @@ A Windows desktop utility that monitors all Git repositories under a configured 
 
 ## Requirements
 
-- Python 3.x
+- Python 3.x (if running source directly)
 - Windows 10 / 11 (uses `win11toast` for notifications)
 - `git` installed and available on the system `PATH`
 
-### Python Dependencies (Already bundled with EXE)
+### Python Dependencies (if running source directly)
 
 ```
 pystray
 Pillow (PIL)
 win11toast
+watchdog
 ```
 
 Install them with:
 
 ```bash
-pip install pystray Pillow win11toast
+pip install pystray Pillow win11toast watchdog
 ```
 
 ## Usage
 
-1. Ensure the `icons/` folder is present in the same directory as `GitCheckTool.py`.
+1. Ensure the `icons/` folder is present in the same directory as source.
 2. Run the application:
 
    ```bash
@@ -59,27 +59,30 @@ pip install pystray Pillow win11toast
 
 ## Installation
 
-1. Make a shortcut to the .exe file by right clicking on the file and Send To > Desktop (create shortcut).
-2. Navigate in File Explorer to the Startup folder by typing 'Startup' into the path bar.
-3. Place the shortcut in the Startup folder and either launch the shortcut or reboot.
-4. On first launch, open the window by right clicking the icon and selecting 'Show'. You will need to enter the path to the repositories' root directory.
+1. Download and extract the zip folder, move the contents to desired location.
+2. Make a shortcut to the .exe file by right clicking on the file and Send To > Desktop (create shortcut).
+3. Navigate in File Explorer to the Startup folder by typing 'Startup' into the path bar.
+4. Place the shortcut in the Startup folder and either launch the shortcut or reboot.
+5. On first launch, open the window by right clicking the icon and selecting 'Show'. You will need to enter the path to the directory containing your repositories.
 
 ### Interactive Menu
 
 ```
 Main Menu:
     0. Set root directory for repositories
-    1. Check all repositories for changes
-    2. Pull for certain repositories
-    3. Pull for all repositories
-    4. Push repository
+    1. Check certain repositories for changes
+    2. Check all repositories for changes
+    3. Pull for certain repositories
+    4. Pull for all repositories
+    5. Push for certain repository
 ```
 
 - **0** – Change the root directory that is scanned for repositories.
-- **1** – Re-scan and check the status of every repository.
-- **2** – Pull only the repositories you select (enter their numbers separated by commas).
-- **3** – Pull all repositories that have remote changes available.
-- **4** – Push only the selected repository that has local changes available.
+- **1** – check the status of repositories you select (enter their numbers separated by commas).
+- **2** – Re-scan and check the status of every repository.
+- **3** – Pull only the repositories you select (enter their numbers separated by commas).
+- **4** – Pull all repositories that have remote changes available.
+- **5** – Push only the repository you select (enter a single number, then a commit message).
 
 ### Status Indicators
 
@@ -96,12 +99,13 @@ The tray icon also changes to reflect the current aggregate status of all reposi
 ## How It Works
 
 1. **Startup** – `GitCheckTool.py` initializes the Tkinter window and the system tray icon, then starts a background daemon thread.
+2. **Auto Push Detection** – Watchdog monitors the git repo root directory and subdirectories for file modifications, creations, and deletions.
 2. **Auto Loop** – Every ~10 minutes (300 counts of a 2-second loop) the manager checks for repository status changes while the window is hidden.
 3. **Repo Discovery** – `RepoManager` recursively walks the root directory looking for `.git` folders and registers each one as a `RepoClass`.
 4. **Status Check** – `RepoClass.refresh_status()` runs `git fetch` and `git status` to determine whether push and/or pull is needed.
 5. **Notifications** – When a repo is discovered to have a pull available (and notifications are enabled), a Windows toast is shown with a **View** / **Dismiss All** button.
 6. **Pulling** – Pulls are executed concurrently using a `ThreadPoolExecutor`, running `git pull` in each selected repository.
-7. **Push** – A push asks for a comment before running `git commit` in the selected repository.
+6. **Pushing** – Pushes are executed by running `git add -A`, `git commit`, then `git push` in the selected repository.
 
 ## Configuration
 
@@ -131,9 +135,14 @@ You can edit this file directly, or change it from within the app using menu opt
 
 ## Current Version
 
-**1.0.0**
+**1.2.0**
 
 ## Changelog
-- 2026-08-06 v1.0.0 - initial release
-- 2026-08-06 v1.1.1 - changed polling delay to 10 minutes from 1 minute
-- 2026-08-06 v1.1.2 - added isdir() check to prevent issues during directory search for repos
+- 2026-08-06 v1.0.0
+  - initial release
+- 2026-08-07 v1.1.0
+  - added git push function
+- 2026-09-24 v1.2.0 
+  - fixed an issue where the application did not auto-show if root directory was not yet defined
+  - added check for selected repositories for changes option
+  - auto-scan all repositories is no longer automatic when closing the window

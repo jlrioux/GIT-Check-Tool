@@ -14,6 +14,10 @@ import os,json,subprocess
 from win11toast import toast
 from concurrent.futures import ThreadPoolExecutor
 
+from watchdog.observers import Observer
+from watchdog.events import FileSystemEventHandler
+from datetime import datetime
+from pathlib import Path
 
 # Current working directory, used as the base for locating settings.json.
 cwd = os.getcwd()
@@ -28,6 +32,36 @@ def run_git_command(repo_uid, command):
     if hasattr(repo,command):
         getattr(repo,command)()
 
+class FileUpdateHandler(FileSystemEventHandler):
+    def __init__(self, rmanager:"RepoManager"):
+        self.repo_manager = rmanager
+
+    def __file_was_saved(self,file_path):
+        # Get modification timestamp
+        filePath = Path(file_path)
+        timestamp = filePath.stat().st_mtime
+
+        # Convert timestamp to a readable datetime object
+        readable_date = datetime.fromtimestamp(timestamp)
+        now_date = datetime.now()
+        difference = now_date - readable_date
+        seconds = difference.total_seconds()
+        return int(seconds) < 1
+
+    # Triggered on any file modification within the directory
+    def on_modified(self, event):
+        if event.is_directory or '.git' in event.src_path:return
+        if not self.__file_was_saved(event.src_path):return
+        self.repo_manager.check_repo_for_push(event.src_path)
+    def on_created(self, event):
+        if event.is_directory or '.git' in event.src_path:return
+        self.repo_manager.check_repo_for_push(event.src_path)
+    def on_deleted(self, event):
+        if event.is_directory or '.git' in event.src_path:return
+        self.repo_manager.check_repo_for_push(event.src_path)
+    def on_moved(self, event):
+        if event.is_directory or '.git' in event.src_path:return
+        self.repo_manager.check_repo_for_push(event.src_path)
 
 class RepoManager():
     # Manager class that oversees all discovered Git repositories.
@@ -42,6 +76,7 @@ class RepoManager():
     repos = {} #type:dict[int,RepoClass]  # uid -> RepoClass mapping
     printout = None        # callback used to print messages to the UI
     update_status = None   # callback used to update the global status indicator
+    watchdog = None
     def __init__(self,printout,update_status,allow_toast):
         # Initialize the manager with UI callbacks and settings.
         RepoManager.printout = printout
@@ -51,7 +86,7 @@ class RepoManager():
         self.__settings = {'root dir':None}  # persisted app settings
         self.__dir_list = []             # list of dirs that contain a .git (repos)
         self.__next_uid = 0              # counter for assigning unique repo ids
-        self.__repos_sorted = []         # repos sorted by dirpath (list of (uid,repo) tuples)
+        self.__repos_sorted = [] #type:list[RepoClass]         # repos sorted by dirpath (list of (uid,repo) tuples)
         self.__pull_repo_list = []       # pull repos already notified (for toast tracking)
         self.__dismiss_toasts = False    # flag to stop sending further toasts
         self.allow_toasts = allow_toast  # whether toast notifications are enabled
@@ -106,7 +141,22 @@ class RepoManager():
                 elif 'Dismiss' in res:
                     self.__dismiss_toasts = True
             count += 1
-        
+
+    def check_repo_for_push(self,path):
+        #find the repo that triggered the event
+        repos = self.repos.values()
+        src_path = path.replace('\\','/')
+        repo = None
+        status = None
+        for repo in repos:
+            dir_path = repo.dirpath.replace('\\','/')
+            if dir_path in src_path:
+                status = repo.vpush_available
+                repo.mark_files_changed()
+                break
+        if status is not None:
+            if status != repo.vpush_available:
+                self.update_current_status()
 
     def get_settings_from_file(self):
         # Load settings from settings.json; on success, refresh the repo list
@@ -151,6 +201,12 @@ class RepoManager():
                 self.__build_repo_list(dir+'/'+item)
 
     def __create_repo(self,dir):
+        # the first time we create a repo, start the watchdog
+        if not RepoManager.watchdog:
+            event_handler = FileUpdateHandler(self)
+            RepoManager.watchdog = Observer()
+            RepoManager.watchdog.schedule(event_handler,path=self.__settings['root dir'],recursive=True)
+            RepoManager.watchdog.start()
         # Create a RepoClass for a discovered repo, skipping it if it already exists.
         for repo in self.__repos_sorted:
             repo = repo[1]
@@ -231,6 +287,26 @@ class RepoManager():
         self.__build_repo_list()
         self.__remove_deleted_repos()
         self.force_all_repo_status_query()
+
+    def check_some_repos(self,id_list):
+        # check only the repos selected by the given indices (as displayed in the list).
+        uid_list = []
+        count = 0
+        for repo in self.__repos_sorted:
+            if repo[1]:
+                if count in id_list:
+                    uid_list.insert(0,repo[0])
+                count += 1
+
+        repo_uids = []
+        for uid in uid_list:
+            if uid in self.repos.keys():
+                repo_uids.append(uid)
+            else:RepoManager.printout('> ---- {} not in the list\n'.format(self.repos[uid].dirpath))
+        if len(repo_uids) < 1:return
+        with ThreadPoolExecutor(max_workers=len(repo_uids)) as executor:
+            futures = {executor.submit(run_git_command, repo_uid, 'refresh_status'): repo_uid for repo_uid in repo_uids}
+        self.__check_toast()
 
     def __create_repo_display_text(self,repo):
         # Print the status text for a single repo with color coding.
@@ -328,6 +404,7 @@ class RepoClass():
     def __init__(self,uid,dirpath):
         self.dirpath = dirpath
         self.uid = uid
+        self.vinitial_check_done = False
         self.vpull_available = False
         self.vpush_available = False
         self.vstatus = 'GOOD'
@@ -349,9 +426,10 @@ class RepoClass():
     def __ge__(self,other):
         return self.dirpath >= other.dirpath
 
-    def refresh_status(self):
+    def refresh_status(self,force_check=False):
         # Fetch and check the repo status via git, then update push/pull flags.
         self.vbusy = True
+        if self.vinitial_check_done and self.vpull_available and not force_check:return
         fetch_command = 'git -C "{}" fetch'.format(self.dirpath)
         try:
             result = subprocess.check_output(fetch_command, shell=True, text=True, stderr=subprocess.STDOUT)
@@ -384,8 +462,26 @@ class RepoClass():
         else:
             self.vpush_available = False
         self.vbusy = False
+        self.vinitial_check_done = True
         new_status = self.__check_status()
-        status_changed = self.vstatus == new_status
+        status_changed = self.vstatus != new_status
+        self.vstatus = new_status
+
+    def mark_files_changed(self):
+        status_command = 'git -C "{}" status'.format(self.dirpath)
+        result = ''
+        try:
+            result = subprocess.check_output(status_command, shell=True, text=True, stderr=subprocess.STDOUT)
+        except subprocess.CalledProcessError as cpe:
+            print('> ---- git status failed: "' + self.dirpath + '"\n{}'.format(str(cpe.output)) + '\n','red')
+            print('> {}\n'.format(cpe))
+            return
+        except Exception as e:
+            print('> ---- status failed: "'+self.dirpath,'red')
+            print('> {}\n'.format(e))
+            return
+        self.vpush_available = 'nothing to commit' not in result
+        new_status = self.__check_status()
         self.vstatus = new_status
 
     def execute_pull(self):
@@ -407,7 +503,7 @@ class RepoClass():
         RepoManager.printout('> ---- pulling complete:'+self.dirpath+'\n')
         RepoManager.printout('> ')
         RepoManager.printout('pull result:\n{}\n'.format(result),'green')
-        self.refresh_status()
+        self.refresh_status(force_check=True)
 
     def execute_push(self,commit_message):
         # Run git pull on this repo, print the result, and refresh the status.
@@ -427,7 +523,7 @@ class RepoClass():
         RepoManager.printout('> ---- pushing complete:'+self.dirpath+'\n')
         RepoManager.printout('> ')
         RepoManager.printout('push result:\n{}\n'.format(result),'green')
-        self.refresh_status()
+        self.refresh_status(force_check=True)
 
     def __check_status(self):
         # Combine push/pull flags into an overall status string.

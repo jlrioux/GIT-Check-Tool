@@ -101,14 +101,15 @@ class CLIManagerClass():
         # Display the main menu and read the user's chosen action.
         action = self.input("""\nMain Menu:
     0. Set root directory for repositories
-    1. Check all repositories for changes
-    2. Pull for certain repositories
-    3. Pull for all repositories
-    4. Push repository
+    1. Check certain repository for changes
+    2. Check all repositories for changes
+    3. Pull for certain repositories
+    4. Pull for all repositories
+    5. Push repository
 What would you like to do? :\n""")
         CLIManagerClass.clearout()
         # Default to action '1' if an invalid selection was entered.
-        if action not in ['0','1','2','3','4']:action = '1'
+        if action not in ['0','1','2','3','4','5']:action = '6'
         try:
             action = int(action)
         except:
@@ -125,9 +126,35 @@ What would you like to do? :\n""")
             self.repos.refresh_repo_list()
             CLIManagerClass.clearout()
         if action == 1:
+            # Refresh/check certain repositories for changes.
+            self.repos.display_all_repos()
+            repo_list_str = self.input('Enter repo numbers to check separated by commas:\n')
+            if repo_list_str == 'resetUI':
+                CLIManagerClass.clearout()
+                self.repos.display_all_repos()
+                return
+            try:
+                # Convert the user's comma-separated input into a list of
+                # zero-based repo indices.
+                repo_list = repo_list_str.split(',')
+                count = 0
+                for repo_id in repo_list:
+                    repo_list[count] = int(repo_list[count])-1
+                    count += 1
+            except:
+                repo_list = []
+                self.repos.display_all_repos()
+                return
+            if len(repo_list) < 1:
+                # No valid repos selected; show all repos and return.
+                self.repos.display_all_repos()
+                return
+            self.repos.check_some_repos(repo_list)
+            CLIManagerClass.clearout()
+        if action == 2:
             # Refresh/check all repositories for changes.
             self.repos.refresh_repo_list()
-        if action == 2:
+        if action == 3:
             # Pull a specific subset of repositories chosen by the user.
             num_repos = self.repos.display_repos_to_pull()
             if num_repos < 1:
@@ -157,10 +184,10 @@ What would you like to do? :\n""")
                 self.repos.display_all_repos()
                 return
             self.repos.pull_some_repos(repo_list)
-        if action == 3:
+        if action == 4:
             # Pull all repositories.
             self.repos.pull_all_repos()
-        if action == 4:
+        if action == 5:
             # push a specific repository chosen by the user.
             num_repos = self.repos.display_repos_to_push()
             if num_repos < 1:
