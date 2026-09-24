@@ -88,6 +88,7 @@ class CLIManagerClass():
                 self.__process_input()
                 time.sleep(0.5)
         return run
+    
     def __process_input(self):
         # Update the UI status to reflect the current repo status.
         CLIManagerClass.update_status(self.repos.current_status)
@@ -113,6 +114,10 @@ What would you like to do? :\n""")
         try:
             action = int(action)
         except:
+            if action == 'resetUI':
+                CLIManagerClass.clearout()
+                self.repos.display_all_repos()
+                return
             CLIManagerClass.printout('> invalid selection\n')
             return
         # Mark the UI as busy while performing the requested operation.
