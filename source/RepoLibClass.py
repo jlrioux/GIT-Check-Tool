@@ -51,17 +51,33 @@ class FileUpdateHandler(FileSystemEventHandler):
     # Triggered on any file modification within the directory
     def on_modified(self, event):
         if event.is_directory or '.git' in event.src_path:return
-        if not self.__file_was_saved(event.src_path):return
-        self.repo_manager.check_repo_for_push(event.src_path)
+        print(f'watchdog:file modified:{event.src_path}')
+        try:
+            if not self.__file_was_saved(event.src_path):return
+            self.repo_manager.check_repo_for_push(event.src_path)
+        except Exception as e:
+            print(f'watchdog:response failed:{e}')
     def on_created(self, event):
         if event.is_directory or '.git' in event.src_path:return
-        self.repo_manager.check_repo_for_push(event.src_path)
+        print(f'watchdog:file created:{event.src_path}')
+        try:
+            self.repo_manager.check_repo_for_push(event.src_path)
+        except Exception as e:
+            print(f'watchdog:response failed:{e}')
     def on_deleted(self, event):
         if event.is_directory or '.git' in event.src_path:return
-        self.repo_manager.check_repo_for_push(event.src_path)
+        print(f'watchdog:file deleted:{event.src_path}')
+        try:
+            self.repo_manager.check_repo_for_push(event.src_path)
+        except Exception as e:
+            print(f'watchdog:response failed:{e}')
     def on_moved(self, event):
         if event.is_directory or '.git' in event.src_path:return
-        self.repo_manager.check_repo_for_push(event.src_path)
+        print(f'watchdog:file moved:{event.src_path}')
+        try:
+            self.repo_manager.check_repo_for_push(event.src_path)
+        except Exception as e:
+            print(f'watchdog:response failed:{e}')
 
 class RepoManager():
     # Manager class that oversees all discovered Git repositories.
@@ -215,6 +231,20 @@ class RepoManager():
         self.repos[self.__next_uid] = RepoClass(self.__next_uid,dir)
         self.__repos_sorted = sorted(self.repos.items(), key=lambda item:item[1])
         self.__next_uid += 1
+
+    def check_for_watchdog(self):
+        if RepoManager.watchdog:
+            if not RepoManager.watchdog.is_alive():
+                print(f'watchdog:stopped, attempting restart')
+                try:
+                    RepoManager.watchdog.start()
+                except Exception as e:
+                    print(f'could not start watchdog:{e}')
+                    try:
+                        RepoManager.watchdog.run()
+                    except Exception as e:
+                        print(f'could not run watchdog after start fail:{e}')
+                print(f'watchdog:restart attempt result, {RepoManager.watchdog.is_alive()}')
 
     def __remove_deleted_repos(self):
         # Remove repos whose directory is no longer part of the discovered list.
@@ -426,7 +456,8 @@ class RepoClass():
     def __ge__(self,other):
         return self.dirpath >= other.dirpath
 
-    def refresh_status(self,force_check=False):
+    #note, required check as it was missing updates if the repo was managed by vscode.
+    def refresh_status(self,force_check=True):
         # Fetch and check the repo status via git, then update push/pull flags.
         self.vbusy = True
         if self.vinitial_check_done and self.vpull_available and not force_check:return

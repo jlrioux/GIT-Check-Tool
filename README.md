@@ -135,7 +135,7 @@ You can edit this file directly, or change it from within the app using menu opt
 
 ## Current Version
 
-**1.2.1**
+**1.2.2**
 
 ## Changelog
 - 2026-08-06 v1.0.0
@@ -148,3 +148,7 @@ You can edit this file directly, or change it from within the app using menu opt
   - auto-scan all repositories is no longer automatic when closing the window
 - 2026-09-24 v1.2.1 
   - fixed an issue in the exe preventing the watchdog from intializing
+- 2026-09-25 v1.2.2 
+  - watchdog daemon now auto-restarts itself if it stops
+  - fixed an issue introduced in v1.2.1 if no settings file is present on launch
+  - fixed an issue preventing recognizing git functions run from an external program.

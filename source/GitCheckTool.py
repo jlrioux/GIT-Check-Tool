@@ -20,7 +20,7 @@ from CLIManagager import CLIManagerClass  # Custom CLI manager that runs git com
 
 # --- Version constant --------------------------------------------------------
 # String identifying the app version (used in the UI version label).
-__version = '1_2_1'
+__version = '1_2_2'
 
 
 # --- Notification helper ------------------------------------------------------
@@ -36,6 +36,7 @@ cwd = os.getcwd()
 # Global reference to the CLI manager instance.
 # It is created lazily inside the background auto-loop once the app is ready.
 cli_manager = None
+resetUI_on_show = True
 
 # --- Global state -------------------------------------------------------------
 # every 1 minute, while the program is in the background, check for repo status
@@ -63,8 +64,11 @@ def __auto_loop():
     # performs status checks and refreshes the icon / notifications.
     global __auto_loop_count
     global cli_manager
+    global resetUI_on_show
     while(True):
         time.sleep(2)                            # Poll every 2 seconds
+        if cli_manager:
+            cli_manager.repos.check_for_watchdog()
         if icon_settings['ready']:               # Only act once UI is ready
             __auto_loop_count += 1
             if __auto_loop_count < 2: pass        # First cycles: do nothing yet
@@ -74,7 +78,8 @@ def __auto_loop():
                 cli_manager = CLIManagerClass(printout,clearout,update_status)  # Create manager
                 cli_manager.Start(not window_is_shown)                          # Start background checks
                 if not cli_manager.repos.root_directory_set:
-                    show_window()
+                    resetUI_on_show = False
+                    show_window(None,None)
             else:
                 # Every 300 loops (~10m) after startup:
                 if __auto_loop_count % 300 == 0:
@@ -92,6 +97,7 @@ __auto_loop_thread.start()
 def show_window(icon=None, item=None):
     # Callback for the tray "Show" menu item: bring the main window back to the foreground.
     global window_is_shown
+    global resetUI_on_show
     window_is_shown = True
     root.after(0, root.deiconify)    # Restore/redisplay the window
     user_entry.focus_set()           # Put the cursor in the input field
@@ -99,7 +105,8 @@ def show_window(icon=None, item=None):
         if cli_manager.repos:        # If repos are loaded, disable toasts while visible
             cli_manager.repos.allow_toasts = False
             user_entry.delete(0,tk.END)      # Clear the input field
-            cli_manager.user_response('resetUI')   # Reset the user interface
+            if resetUI_on_show:cli_manager.user_response('resetUI')   # Reset the user interface
+            resetUI_on_show = True
 
 def quit_window(icon=None, item=None):
     # Callback for the tray "Quit" menu item: exit the application entirely.
