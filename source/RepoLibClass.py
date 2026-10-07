@@ -99,7 +99,9 @@ class RepoManager():
         RepoManager.update_status = update_status
         self.root_directory_set = False  # becomes True once a root dir is configured/loaded
         self.current_status = 'BUSY'     # current overall status of all repos
-        self.__settings = {'root dir':None}  # persisted app settings
+        self.loop_time = 10              # time in minutes for the refresh git status loop
+        self.batch_size = 10             # number of concurrent batch operations
+        self.__settings = {'root dir':None,'loop time':10,'git batch size':10}  # persisted app settings
         self.__dir_list = []             # list of dirs that contain a .git (repos)
         self.__next_uid = 0              # counter for assigning unique repo ids
         self.__repos_sorted = [] #type:list[RepoClass]         # repos sorted by dirpath (list of (uid,repo) tuples)
@@ -180,7 +182,10 @@ class RepoManager():
         try:
             with open(cwd+'/settings.json','r') as file:
                 self.__settings = json.load(file)
+                if 'git batch size' in self.__settings:self.batch_size = self.__settings['git batch size']
+                if 'loop time' in self.__settings:self.loop_time = self.__settings['loop time']
                 self.root_directory_set = True
+                RepoManager.printout('> Settings:{}\n'.format(self.__settings))
                 self.refresh_repo_list()
                 self.display_all_repos()
         except:
@@ -190,6 +195,8 @@ class RepoManager():
         # Store the chosen root directory, normalize separators, persist it to
         # settings.json, then rebuild the repo list and display the results.
         self.__settings['root dir'] = dir
+        self.__settings['loop time'] = self.loop_time
+        self.__settings['git batch size'] = self.batch_size
         if len(self.__settings['root dir']) > 0:
             self.__settings['root dir'] = self.__settings['root dir'].replace('\\','/')
             while self.__settings['root dir'][-1] in ['/']:
@@ -197,6 +204,7 @@ class RepoManager():
         with open(cwd+'/settings.json','w') as file:
             json.dump(self.__settings,file)
         self.root_directory_set = True
+        RepoManager.printout('> Settings:{}\n'.format(self.__settings))
         self.refresh_repo_list()
         self.display_all_repos()
 
@@ -264,8 +272,7 @@ class RepoManager():
             if self.repos[uid].vpull_available:
                 repo_uids.append(uid)
         if len(repo_uids) < 1:return
-        with ThreadPoolExecutor(max_workers=len(repo_uids)) as executor:
-            futures = {executor.submit(run_git_command, repo_uid, 'execute_pull'): repo_uid for repo_uid in repo_uids}
+        self.run_threaded_git_action(repo_uids,'execute_pull')
         self.__check_toast()
 
     def pull_some_repos(self,id_list):
@@ -286,8 +293,7 @@ class RepoManager():
                 else:RepoManager.printout('> ---- no pull for {}\n'.format(self.repos[uid].dirpath))
             else:RepoManager.printout('> ---- {} not in the list\n'.format(self.repos[uid].dirpath))
         if len(repo_uids) < 1:return
-        with ThreadPoolExecutor(max_workers=len(repo_uids)) as executor:
-            futures = {executor.submit(run_git_command, repo_uid, 'execute_pull'): repo_uid for repo_uid in repo_uids}
+        self.run_threaded_git_action(repo_uids,'execute_pull')
         self.__check_toast()
 
     def push_repo(self,id_list,commit_message):
@@ -334,8 +340,7 @@ class RepoManager():
                 repo_uids.append(uid)
             else:RepoManager.printout('> ---- {} not in the list\n'.format(self.repos[uid].dirpath))
         if len(repo_uids) < 1:return
-        with ThreadPoolExecutor(max_workers=len(repo_uids)) as executor:
-            futures = {executor.submit(run_git_command, repo_uid, 'refresh_status'): repo_uid for repo_uid in repo_uids}
+        self.run_threaded_git_action(repo_uids,'refresh_status')
         self.__check_toast()
 
     def __create_repo_display_text(self,repo):
@@ -423,9 +428,21 @@ class RepoManager():
         for repo in self.__repos_sorted:
             repo_uids.append(repo[0])
         RepoManager.printout('> Checking Repo Status\n')
-        with ThreadPoolExecutor(max_workers=len(repo_uids)) as executor:
-            futures = {executor.submit(run_git_command, repo_uid, 'refresh_status'): repo_uid for repo_uid in repo_uids}
+        self.run_threaded_git_action(repo_uids,'refresh_status')
         self.__check_toast()
+
+    def run_threaded_git_action(self,repo_uids,action):
+        num_batches = int(len(repo_uids)/self.batch_size)+1
+        current_batch = 1
+        while repo_uids:
+            RepoManager.printout('> Batch {} of {}\n'.format(current_batch,num_batches))
+            current_batch += 1
+            batch = []
+            batch = repo_uids[:self.batch_size]
+            del repo_uids[:self.batch_size]
+            with ThreadPoolExecutor(max_workers=len(batch)) as executor:
+                futures = {executor.submit(run_git_command, repo_uid, action): repo_uid for repo_uid in batch}
+
 
 class RepoClass():
     # Represents a single Git repository, tracking its push/pull availability,

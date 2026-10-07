@@ -102,7 +102,7 @@ class CLIManagerClass():
         # Display the main menu and read the user's chosen action.
         action = self.input("""\nMain Menu:
     0. Set root directory for repositories
-    1. Check certain repository for changes
+    1. Check certain repositories for changes
     2. Check all repositories for changes
     3. Pull for certain repositories
     4. Pull for all repositories

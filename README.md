@@ -8,7 +8,7 @@ A Windows desktop utility that monitors all Git repositories under a configured 
 - **Automatic Repository Discovery** – Recursively scans a given root directory and builds a list of all Git repositories found.
 - **Push / Pull Status Detection** – For each repo, determines whether you have local commits to push or remote commits to pull.
 - **Windows Toast Notifications** – Displays a notification when a repository is found that needs to be pulled.
-- **Bulk Pull** – Pull selected repositories or all repositories at once (using concurrent threads).
+- **Bulk Pull** – Pull selected repositories or all repositories in batches(using concurrent threads).
 - **Single Push** – Push selected repository.
 - **Colored Status Output** – Uses color-coded text (green / red / orange / blue) to clearly indicate repository status.
 - **Persistent Settings** – Remembers the configured root directory in `settings.json`.
@@ -20,7 +20,7 @@ A Windows desktop utility that monitors all Git repositories under a configured 
 | `GitCheckTool.py` | Main entry point. Sets up the Tkinter window, system tray icon, and the automatic background loop. |
 | `CLIManagager.py` | `CLIManagerClass` – Handles the interactive text menu and forwards user input to the repo manager. |
 | `RepoLibClass.py` | `RepoManager` and `RepoClass` – Core logic for repo discovery, git commands, status checks, and pulling. |
-| `settings.json`   | Stores the configured root directory (e.g. `{"root dir": "C:/GIT"}`).        |
+| `settings.json`   | Stores the configured root directory and behavior settings. |
 | `icons/`          | PNG icons used for the tray icon and window, representing each status state. |
 
 ## Requirements
@@ -100,7 +100,7 @@ The tray icon also changes to reflect the current aggregate status of all reposi
 
 1. **Startup** – `GitCheckTool.py` initializes the Tkinter window and the system tray icon, then starts a background daemon thread.
 2. **Auto Push Detection** – Watchdog monitors the git repo root directory and subdirectories for file modifications, creations, and deletions.
-2. **Auto Loop** – Every ~10 minutes (300 counts of a 2-second loop) the manager checks for repository status changes while the window is hidden.
+2. **Auto Loop** – Every ~10 minutes (configurable in the settings.json) the manager checks for repository status changes while the window is hidden.
 3. **Repo Discovery** – `RepoManager` recursively walks the root directory looking for `.git` folders and registers each one as a `RepoClass`.
 4. **Status Check** – `RepoClass.refresh_status()` runs `git fetch` and `git status` to determine whether push and/or pull is needed.
 5. **Notifications** – When a repo is discovered to have a pull available (and notifications are enabled), a Windows toast is shown with a **View** / **Dismiss All** button.
@@ -113,7 +113,9 @@ The root directory is stored in `settings.json`, Example:
 
 ```json
 {
-  "root dir": "C:/GIT"
+  "root dir": "C:/GIT",
+  "loop time": 10,
+  "git batch size":10
 }
 ```
 
@@ -123,7 +125,7 @@ You can edit this file directly, or change it from within the app using menu opt
 
 - The `settings.json` file and the `icons/` directory must be located in the **current working directory** from which the app is launched.
 - Closing the main window hides the app to the tray instead of quitting. Use the tray menu **Quit** to exit completely.
-- Toast notifications are only displayed when the main window is hidden, so you are not interrupted while working.
+- Toast notifications are only displayed when the main window is hidden, so you are not interrupted while using the app.
 
 ## AI Disclaimer
 
@@ -135,7 +137,7 @@ You can edit this file directly, or change it from within the app using menu opt
 
 ## Current Version
 
-**1.2.3**
+**1.3.0**
 
 ## Changelog
 - 2026-08-06 v1.0.0
@@ -151,6 +153,11 @@ You can edit this file directly, or change it from within the app using menu opt
 - 2026-09-25 v1.2.2 
   - watchdog daemon now auto-restarts itself if it stops
   - fixed an issue introduced in v1.2.1 if no settings file is present on launch
-  - fixed an issue preventing recognizing git functions run from an external program.
+  - fixed an issue preventing recognizing git functions run from an external program
 - 2026-10-06 v1.2.3 
-  - re-enabled the full git fetch during the 10 minute loop instead of just rebuilding the repo list.
+  - re-enabled the full git fetch during the 10 minute loop instead of just rebuilding the repo list
+- 2026-10-06 v1.3.0
+  - made the time between background polling cycles a configurable item in the settings.json file
+  - now does fetch and pull git commands in batches. the number of commands per batch is configurable in the settings.json file
+    - the window updates as it begins the next batch of commands
+  - the app now displays the settings file upon startup and when setting the home directory
