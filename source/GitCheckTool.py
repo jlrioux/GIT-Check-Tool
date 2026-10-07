@@ -16,12 +16,15 @@ import threading                     # Background threads (tray + auto-loop)
 import os                            # Filesystem ops and current working dir
 from PIL import Image                # Load PNG images for the tray/window icons
 from win11toast import toast         # Windows 11 toast notification helper
+import webbrowser                    # Used for opening a url when an update is available
 from CLIManagager import CLIManagerClass  # Custom CLI manager that runs git commands
+from VersionCheckClass import VersionCheckClass # Check current version against the latest on GitHub
+from VersionCheckClass import https_releases_url
 
 # --- Version constant --------------------------------------------------------
 # String identifying the app version (used in the UI version label).
-__version = '1_3_0'
-
+__version = '1_3_1'
+__version_checker = VersionCheckClass(__version)
 
 # --- Notification helper ------------------------------------------------------
 def send_toast(title,content):
@@ -48,6 +51,16 @@ icon_settings = {'status':'INIT',    # Current status code (INIT, GOOD, PUSH, PU
                  'old status':'',    # Previously displayed status (to detect changes)
                  'ready':False}      # True once the UI is fully initialized
 
+
+def __check_version():
+    if __version_checker.check_github_version():
+        update_link_label.pack()
+    else:
+        update_link_label.pack_forget()
+        
+
+
+
 # --- Icon update helper -------------------------------------------------------
 def __set_icon():
     # Update the tray icon and the window titlebar icon to match the current status.
@@ -71,7 +84,7 @@ def __auto_loop():
             cli_manager.repos.check_for_watchdog()
         if icon_settings['ready']:               # Only act once UI is ready
             __auto_loop_count += 1
-            if __auto_loop_count < 2: pass        # First cycles: do nothing yet
+            if __auto_loop_count < 2: pass       # First cycles: do nothing yet
             elif __auto_loop_count == 2:         # On the 2nd cycle: bootstrap the CLI manager
                 update_status('BUSY')            # Show "busy" status
                 __set_icon()                     # Refresh icon
@@ -81,6 +94,9 @@ def __auto_loop():
                     resetUI_on_show = False
                     show_window(None,None)
             else:
+                # Every hour check for updates:
+                if __auto_loop_count % 1800 == 0:
+                    __check_version()
                 # Every (~10minutes default) after startup:
                 if __auto_loop_count % (cli_manager.repos.loop_time*30) == 0:
                     if not window_is_shown and cli_manager.repos.root_directory_set:      # Only when window is hidden (in background)
@@ -203,6 +219,11 @@ user_entry.bind('<Return>',run_user_entry)  # Bind Enter key to submit the comma
 version_label = tk.Label(root,text='Version {}'.format(__version))
 version_label.pack()
 
+update_link_label = tk.Label(root,text='Update Available', fg='blue', cursor='hand2')
+update_link_label.pack()
+update_link_label.bind('<Button-1>', lambda e: webbrowser.open_new(https_releases_url))
+update_link_label.pack_forget()
+
 
 # --- Console output helpers -----------------------------------------------------------
 def clearout():
@@ -219,6 +240,7 @@ def printout(text,color='black'):
 
 
 # --- Application startup ---------------------------------------------------------------
+__check_version()
 icon_settings['ready'] = True        # Mark the app as fully initialized (starts auto-loop)
 hide_window()                        # Start in the background (hidden, tray-only)
 root.mainloop()                      # Run the Tkinter event loop
